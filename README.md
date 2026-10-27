@@ -32,7 +32,7 @@ Proyek ini berfokus pada konfigurasi OSPF, pengalamatan IP, komunikasi antar-sit
 - Network Redundancy dan Failover
 
 ## Topologi Jaringan
-
+![OSPF Topology](ospf-topology.png)
 Jaringan terdiri dari tiga lokasi yang terhubung melalui tiga router dalam topologi segitiga.
 
 - **R1 — Head Office (HQ):** `192.168.10.0/24`
