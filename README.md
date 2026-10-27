@@ -32,7 +32,9 @@ Proyek ini berfokus pada konfigurasi OSPF, pengalamatan IP, komunikasi antar-sit
 - Network Redundancy dan Failover
 
 ## Topologi Jaringan
+
 ![OSPF Topology](ospf-topology.png)
+
 Jaringan terdiri dari tiga lokasi yang terhubung melalui tiga router dalam topologi segitiga.
 
 - **R1 — Head Office (HQ):** `192.168.10.0/24`
@@ -124,80 +126,52 @@ router ospf 1
 
 Konfigurasi di atas merupakan bagian konfigurasi OSPF. Alamat IP interface, status interface, dan pengaturan default gateway PC harus sesuai dengan IP addressing plan.
 
-## Verifikasi dan Pengujian
+## Dokumentasi Pengujian
 
 ### 1. Verifikasi Neighbor OSPF
 
-Perintah yang digunakan:
+![Verifikasi Neighbor OSPF](ospf-neighbors.png)
 
-```cisco
-show ip ospf neighbor
-```
-
-Hasil pengujian menunjukkan adjacency OSPF berhasil terbentuk dengan status `FULL`. Setelah koneksi R1–R2 diaktifkan kembali, R1 kembali membentuk adjacency dengan R2 dan R3.
+Verifikasi dilakukan menggunakan perintah `show ip ospf neighbor` untuk memastikan adjacency OSPF antar-router terbentuk dengan status `FULL`.
 
 ### 2. Verifikasi Routing Table
 
-Perintah yang digunakan:
+![Verifikasi Routing Table](routing-table.png)
 
-```cisco
-show ip route
-```
+Verifikasi routing table dilakukan menggunakan perintah `show ip route`. Rute dengan kode `O` menunjukkan jaringan remote yang dipelajari melalui OSPF.
 
-Router mempelajari jaringan remote melalui OSPF. Rute OSPF ditandai dengan kode `O` pada routing table.
+Ketika seluruh koneksi aktif, R1 memiliki rute menuju:
 
-Contoh rute pada R1 ketika seluruh koneksi aktif:
+- `192.168.20.0/24` melalui `10.0.12.2`.
+- `192.168.30.0/24` melalui `10.0.13.2`.
 
-```text
-O 192.168.20.0/24 [110/2] via 10.0.12.2
-O 192.168.30.0/24 [110/2] via 10.0.13.2
-```
+### 3. Pengujian Konektivitas Antar-Site
 
-Hasil tersebut menunjukkan R1 dapat menjangkau LAN Branch Office 1 melalui R2 dan LAN Branch Office 2 melalui R3.
+![Pengujian Konektivitas Antar-Site](connectivity-test.png)
 
-### 3. Pengujian Ping Antar-Site
+Pengujian ping dilakukan dari HQ-PC1 (`192.168.10.10`) menuju Branch1-PC1 (`192.168.20.10`) dan Branch2-PC1 (`192.168.30.10`).
 
-Pengujian dilakukan dari HQ-PC1 dengan alamat IP `192.168.10.10` menuju:
-
-- Branch1-PC1 — `192.168.20.10`
-- Branch2-PC1 — `192.168.30.10`
-
-Pada pengujian awal, paket pertama dapat mengalami timeout karena proses resolusi ARP. Setelah pengujian diulang, kedua tujuan memberikan hasil empat dari empat paket berhasil diterima dengan `0% packet loss`.
+Pengujian ulang menunjukkan kedua tujuan dapat dijangkau dengan empat paket berhasil diterima dan `0% packet loss`.
 
 ### 4. Pengujian Failover
 
+![Pengujian Failover](failover-test.png)
+
 Pengujian dilakukan dengan mematikan interface R1 G0/1 yang menghubungkan R1 dengan R2.
 
-Perintah yang digunakan:
+Routing table menunjukkan bahwa rute menuju jaringan Branch Office 1 berpindah melalui R3 menggunakan next-hop `10.0.13.2`. Ping dari HQ-PC1 menuju Branch1-PC1 tetap berhasil dengan empat paket diterima dan `0% packet loss`.
 
-```cisco
-configure terminal
-interface gigabitEthernet 0/1
-shutdown
-```
+Hasil ini membuktikan bahwa jalur alternatif melalui R3 dapat mempertahankan konektivitas antara HQ dan Branch Office 1 ketika koneksi langsung R1–R2 terputus.
 
-Setelah koneksi langsung R1–R2 terputus, routing table R1 menunjukkan rute menuju LAN Branch Office 1 berpindah ke jalur alternatif melalui R3.
+### 5. Verifikasi Status Interface
 
-Contoh rute selama pengujian:
+![Verifikasi Status Interface](interface-status.png)
 
-```text
-O 192.168.20.0/24 [110/3] via 10.0.13.2
-O 192.168.30.0/24 [110/2] via 10.0.13.2
-```
+Status interface diperiksa menggunakan perintah `show ip interface brief` untuk melihat alamat IP serta kondisi interface pada router.
 
-Ping dari HQ-PC1 menuju Branch1-PC1 selama pengujian failover tetap berhasil dengan empat dari empat paket diterima dan `0% packet loss`.
+### 6. Pemulihan Koneksi Antar-Router
 
-Hasil tersebut menunjukkan bahwa jalur alternatif melalui R3 dapat mempertahankan konektivitas antara HQ dan Branch Office 1 ketika koneksi langsung R1–R2 terputus.
-
-### 5. Pemulihan Koneksi
-
-Setelah pengujian failover selesai, interface R1 G0/1 diaktifkan kembali.
-
-```cisco
-configure terminal
-interface gigabitEthernet 0/1
-no shutdown
-```
+Setelah pengujian failover selesai, interface R1 G0/1 diaktifkan kembali menggunakan perintah `no shutdown`.
 
 Adjacency OSPF dengan R2 kembali mencapai status `FULL`, dan routing table kembali menunjukkan rute langsung menuju Branch Office 1 melalui R2.
 
@@ -215,30 +189,30 @@ Adjacency OSPF dengan R2 kembali mencapai status `FULL`, dan routing table kemba
 ## Struktur Repository
 
 ```text
-enterprise-multi-site-ospf/
+Enterprise-Multi-Site-Network-with-OSPF-and-Redundancy/
 │
 ├── README.md
-├── Enterprise-Multi-Site-OSPF.pkt
-│
-└── screenshots/
-    ├── topology.png
-    ├── ospf-neighbors.png
-    ├── routing-table.png
-    └── failover-test.png
+├── enterprise-multi-site-ospf-network.pkt
+├── connectivity-test.png
+├── failover-test.png
+├── interface-status.png
+├── ospf-neighbors.png
+├── ospf-topology.png
+└── routing-table.png
 ```
 
 Keterangan file:
 
 - `README.md` — dokumentasi proyek dan hasil pengujian.
-- `Enterprise-Multi-Site-OSPF.pkt` — file simulasi Cisco Packet Tracer.
-- `topology.png` — screenshot keseluruhan topologi jaringan.
+- `enterprise-multi-site-ospf-network.pkt` — file simulasi Cisco Packet Tracer.
+- `ospf-topology.png` — screenshot keseluruhan topologi jaringan.
 - `ospf-neighbors.png` — screenshot hasil verifikasi neighbor OSPF.
 - `routing-table.png` — screenshot routing table.
+- `connectivity-test.png` — screenshot pengujian konektivitas antar-site.
 - `failover-test.png` — screenshot pengujian failover dan konektivitas.
+- `interface-status.png` — screenshot status interface router.
 
 ## Konsep yang Dipelajari
-
-Melalui proyek ini, konsep jaringan yang dipraktikkan meliputi:
 
 - Perencanaan alamat IP dan subnetting IPv4.
 - Implementasi routing dinamis menggunakan OSPF.
